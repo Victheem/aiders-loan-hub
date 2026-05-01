@@ -153,7 +153,7 @@ const Expenses = () => {
 
       const yearly = Object.entries(yearlyData)
         .map(([date, amount]) => ({ date, amount }))
-        .sort((a, b) => a.localeCompare(b))
+        .sort((a, b) => a.date.localeCompare(b.date))
 
       // Category breakdown
       const categoryData: Record<string, number> = {}

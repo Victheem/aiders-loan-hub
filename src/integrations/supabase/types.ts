@@ -107,12 +107,16 @@ export type Database = {
           created_at: string
           daily_repayment_amount: number | null
           disbursement_date: string | null
+          disbursed_amount: number
           duration: number
           id: string
           interest: number
+          interest_amount: number
           officer_id: string
           outstanding_balance: number
+          start_date: string | null
           status: string
+          due_date: string | null
           total_with_interest: number | null
           updated_at: string
         }
@@ -121,11 +125,15 @@ export type Database = {
           created_at?: string
           daily_repayment_amount?: number | null
           disbursement_date?: string | null
+          disbursed_amount?: number
           duration: number
+          due_date?: string | null
           id?: string
           interest?: number
+          interest_amount?: number
           officer_id: string
           outstanding_balance?: number
+          start_date?: string | null
           status?: string
           total_with_interest?: number | null
           updated_at?: string
@@ -135,11 +143,15 @@ export type Database = {
           created_at?: string
           daily_repayment_amount?: number | null
           disbursement_date?: string | null
+          disbursed_amount?: number
           duration?: number
+          due_date?: string | null
           id?: string
           interest?: number
+          interest_amount?: number
           officer_id?: string
           outstanding_balance?: number
+          start_date?: string | null
           status?: string
           total_with_interest?: number | null
           updated_at?: string
