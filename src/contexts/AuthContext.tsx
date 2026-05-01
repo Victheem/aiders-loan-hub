@@ -1,15 +1,15 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
-type AppRole = 'super_admin' | 'loan_officer' | 'staff';
+type AppRole = "super_admin" | "loan_officer" | "staff";
 
 interface AppUser {
   id: string;
   name: string;
   email: string;
   role: AppRole;
-  officerId?: string; // loan_officers.id if role is loan_officer
+  officerId?: string;
 }
 
 interface AuthContextType {
@@ -24,39 +24,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// ✅ SAFE USER FETCHER
 async function fetchAppUser(supaUser: SupabaseUser): Promise<AppUser | null> {
-  // Fetch profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name, email')
-    .eq('id', supaUser.id)
-    .single();
+  try {
+    const [{ data: profile }, { data: roleData }] = await Promise.all([
+      supabase.from("profiles").select("name, email").eq("id", supaUser.id).single(),
+      supabase.from("user_roles").select("role").eq("user_id", supaUser.id).single(),
+    ]);
 
-  // Fetch role
-  const { data: roleData } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', supaUser.id)
-    .single();
+    let officerId: string | undefined;
 
-  // Fetch officer id if loan_officer
-  let officerId: string | undefined;
-  if (roleData?.role === 'loan_officer') {
-    const { data: officer } = await supabase
-      .from('loan_officers')
-      .select('id')
-      .eq('user_id', supaUser.id)
-      .single();
-    officerId = officer?.id;
+    if (roleData?.role === "loan_officer") {
+      const { data: officer } = await supabase
+        .from("loan_officers")
+        .select("id")
+        .eq("user_id", supaUser.id)
+        .single();
+
+      officerId = officer?.id;
+    }
+
+    return {
+      id: supaUser.id,
+      name: profile?.name || supaUser.email || "",
+      email: profile?.email || supaUser.email || "",
+      role: (roleData?.role as AppRole) || "staff",
+      officerId,
+    };
+  } catch (err) {
+    console.error("fetchAppUser error:", err);
+    return null;
   }
-
-  return {
-    id: supaUser.id,
-    name: profile?.name || supaUser.email || '',
-    email: profile?.email || supaUser.email || '',
-    role: (roleData?.role as AppRole) || 'staff',
-    officerId,
-  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -65,51 +63,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
-      setSession(sess);
-      if (sess?.user) {
-        // Use setTimeout to avoid Supabase deadlock
-        setTimeout(async () => {
-          const appUser = await fetchAppUser(sess.user);
-          setUser(appUser);
-          setLoading(false);
-        }, 0);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
+    let isMounted = true;
 
-    // Then check existing session
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      if (sess?.user) {
-        fetchAppUser(sess.user).then(appUser => {
-          setUser(appUser);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
+    // ✅ INITIAL SESSION LOAD (CRITICAL)
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
 
-    return () => subscription.unsubscribe();
+      if (!isMounted) return;
+
+      setSession(data.session);
+
+      if (data.session?.user) {
+        const appUser = await fetchAppUser(data.session.user);
+        if (isMounted) setUser(appUser);
+      }
+
+      setLoading(false);
+    };
+
+    init();
+
+    // ✅ AUTH LISTENER (NO async directly)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, sess) => {
+        setSession(sess);
+
+        if (sess?.user) {
+          fetchAppUser(sess.user).then((appUser) => {
+            if (isMounted) setUser(appUser);
+          });
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
+  // ✅ LOGIN
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) return { success: false, error: error.message };
 
-    // Log audit
-    await supabase.from('audit_logs').insert({
-      action: 'Logged in',
+    await supabase.from("audit_logs").insert({
+      action: "Logged in",
       user_name: email,
     });
 
     return { success: true };
   };
 
+  // ✅ SIGNUP
   const signup = async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -119,25 +128,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: { name },
       },
     });
+
     if (error) return { success: false, error: error.message };
+
     return { success: true };
   };
 
+  // ✅ LOGOUT (FIXED)
   const logout = async () => {
     await supabase.auth.signOut();
+
     setUser(null);
     setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, signup, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        login,
+        signup,
+        logout,
+        isAuthenticated: !!user,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
+// ✅ HOOK
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }

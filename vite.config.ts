@@ -18,4 +18,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Build optimizations
+  build: {
+    target: "esnext",
+    minify: "esbuild",
+    rollupOptions: {
+      output: {
+        // Ensure consistent chunk naming
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
+      },
+    },
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ["jspdf", "jspdf-autotable"],
+  },
 }));

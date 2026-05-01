@@ -57,6 +57,16 @@ export interface AuditLog {
   timestamp: string;
 }
 
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface KPIData {
   totalLoanBalance: number;
   totalDisbursed: number;
