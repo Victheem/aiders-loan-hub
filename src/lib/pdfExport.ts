@@ -1,6 +1,4 @@
 // src/lib/pdfExport.ts
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -53,6 +51,13 @@ interface OfficerSummary {
  */
 export async function exportLoanReportPDF(loanId?: string): Promise<void> {
   try {
+    // Lazy load PDF libraries
+    const [jsPDFModule] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable')
+    ]);
+    const jsPDF = jsPDFModule.default;
+
     // Fetch loans data with officer info
     let loansQuery = supabase
       .from('loans')

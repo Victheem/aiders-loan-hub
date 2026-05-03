@@ -5,8 +5,6 @@ import { formatNaira } from '@/lib/format';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Download, FileText } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 const Reports = () => {
   const { data: statusData = [] } = useQuery({
@@ -82,7 +80,12 @@ const Reports = () => {
     URL.revokeObjectURL(url);
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    const [jsPDFModule, autoTableModule] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable')
+    ]);
+    const jsPDF = jsPDFModule.default;
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text('Aiders Global - Loan Report', 14, 22);
