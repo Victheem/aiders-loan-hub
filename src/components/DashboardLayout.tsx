@@ -8,7 +8,6 @@ import {
   UserCog,
   BarChart3,
   LogOut,
-  Shield,
   ChevronDown,
   Menu,
   X,
@@ -50,9 +49,7 @@ const DashboardLayout = () => {
   const SidebarContent = () => (
     <>
       <div className="p-5 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-sidebar-accent flex items-center justify-center">
-          <Shield className="w-5 h-5 text-sidebar-primary" />
-        </div>
+        <img src="/logo.png" alt="AIDERS Global Logo" className="w-9 h-9 rounded-lg" />
         <div>
           <h1 className="text-base font-bold text-sidebar-primary">AIDERS</h1>
           <p className="text-[10px] text-sidebar-muted uppercase tracking-widest">

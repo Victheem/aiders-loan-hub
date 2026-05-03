@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 type View = "login" | "signup" | "forgot";
 
@@ -108,7 +108,7 @@ const Login = () => {
       {/* LEFT SIDE */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12">
         <div className="text-center">
-          <Shield className="w-12 h-12 text-white mb-4" />
+          <img src="/logo.png" alt="AIDERS Global Logo" className="w-16 h-16 mb-4 mx-auto" />
           <h1 className="text-3xl text-white font-bold">AIDERS Global</h1>
           <p className="text-white/70 mt-2">
             Loan Management System
